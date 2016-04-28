@@ -40,78 +40,6 @@ var hasColConflictAt = function (colIndex, arr) {
   return conflict >= 2 ? true : false;
 };
 
-var isInBounds = function(rowIndex, colIndex, n) {
-  return (
-    0 <= rowIndex && rowIndex < n &&
-    0 <= colIndex && colIndex < n
-  );
-};
-
-var hasMajorDiagonalConflictAt = function(majorDiagonalColumnIndexAtFirstRow, arr) {
-  var diagIndex = 1;
-  var conflict = 0;
-  if (arr[0][majorDiagonalColumnIndexAtFirstRow] === 1) {
-    conflict += 1;
-  }
-  for (var i = majorDiagonalColumnIndexAtFirstRow; i < arr.length; i++) {
-    if (isInBounds(diagIndex, i + 1, arr.length) && arr[diagIndex][i + 1] === 1) {
-      //return true;
-      conflict += 1;
-      diagIndex += 1;
-    } else { 
-      diagIndex += 1;
-    }
-  }
-  
-  return conflict >= 2 ? true : false;
-};
-
-var hasAnyMajorDiagonalConflicts = function(arr) {
-  debugger;
-  if (arr === undefined || arr.length === 0) {
-    return false;
-  }
-
-  for (var i = (arr.length * -1) + 1; i < arr.length; i++) {
-    if (hasMajorDiagonalConflictAt(i, arr)) {
-      return true;
-    }
-  }
-  debugger;
-  return false;
-};
-
-var hasMinorDiagonalConflictAt = function(givenColumn, arr) {
-  //debugger;
-  //startRowIndex = startRowIndex || 0;
-  var currentCol = givenColumn;
-  var currentRow = 0;
-  var count = 0;
-  while (currentCol >= 0) {
-    if (isInBounds(currentRow, currentCol, arr.length) && arr[currentRow][currentCol] === 1) {
-      count++;
-      if (count > 1) {
-        return true;
-      }
-    }
-    currentCol--;
-    currentRow++;
-  }
-
-  return false;
-};
-
-var hasAnyMinorDiagonalConflicts = function(arr) {
-  debugger;
-  for (var i = 0; i < arr.length + arr.length - 1; i++) {
-    if (hasMinorDiagonalConflictAt(i, arr)) {
-      return true;
-    }
-  }
-  debugger;
-  return false;
-};
-
 var createBoard = function(n) {
   var board = [];
   for (var i = 0; i < n; i++) {
@@ -142,9 +70,66 @@ window.findNRooksSolution = function(n) {
   return solution;
 };
 
+var calcInvalidSpotsRooks = function(rowIndex, colIndex, n, obj) {
+  // cancel out columns
+  for (var i = 0; i < n; i++) {
+    if (obj[i].indexOf(colIndex) === -1) {
+      obj[i].push(colIndex);
+    }
+  }
+  // cancel out rows
+  for (var i = 0; i < n; i++) {
+    if (obj[rowIndex].indexOf(i) === -1) {
+      obj[rowIndex].push(i);
+    }
+  }
+  return obj;
+};
+
 // return the number of nxn chessboards that exist, with n rooks placed such that none of them can attack each other
 window.countNRooksSolutions = function(n) {
-  // var solutionCount = 0;
+  var solutionCount = 0;
+  var badIndexObj = {};
+ 
+  var populateObj = function(obj) {
+    for (var i = 0; i < n; i++) {
+      obj[i] = [];
+    }
+    return obj;
+  };
+  badIndexObj = populateObj(badIndexObj);
+  
+  if (n < 2) {
+    return 1;
+  }
+
+  var helper = function(boardRowLength, currRow) {
+    for (var i = 0; i < boardRowLength; i++) {
+      //debugger;
+      if (badIndexObj[currRow] !== undefined) {
+        if (badIndexObj[currRow].indexOf(i) === -1 && currRow !== finalRow) {
+          var copy = JSON.parse(JSON.stringify(badIndexObj));
+          calcInvalidSpotsRooks(currRow, i, n, badIndexObj);
+          helper(boardRowLength, currRow + 1);
+          badIndexObj = JSON.parse(JSON.stringify(copy));
+        } else if (badIndexObj[currRow].indexOf(i) === -1 && currRow === finalRow) {
+          solutionCount++;
+        } else if (badIndexObj[currRow].length === n && currRow !== finalRow) {
+          return;
+        } else if (badIndexObj[currRow].length === n && currRow === finalRow) {
+          return;
+        }
+      }
+    }
+  };
+
+  var currRow = 1;
+  var finalRow = n - 1;
+  for (var i = 0; i < n; i++) {
+    calcInvalidSpotsRooks(0, i, n, badIndexObj);    
+    helper(n, currRow);
+    badIndexObj = populateObj(badIndexObj);
+  }
 
   // //var board = createBoard(n);
   // var finalRow = n - 1;
@@ -178,60 +163,113 @@ window.countNRooksSolutions = function(n) {
   //   helper(n, currRow, colArr);
   // }
 
-  // //start at row 1 and loop to n
-  // //for each other row check each column index and see if it passes
-  // //if it does go to the next row and check those
-  // //then recurse back to check the columns from the previous row
-  // //if its the last row, and you find a good column index, then solutionCount gets incremented.
-
-  // console.log('Number of solutions for ' + n + ' rooks:', solutionCount);
-  // return solutionCount;
+  console.log('Number of solutions for ' + n + ' rooks:', solutionCount);
+  return solutionCount;
 };
 
-// return a matrix (an array of arrays) representing a single nxn chessboard, with n queens placed such that none of them can attack each other
-/*window.findNQueensSolution = function(n) {
-  var solution = createBoard(n);
-
-  if (n === 0) {
-    return solution;
+var calcInvalidSpots = function(rowIndex, colIndex, n, obj) {
+  // cancel out columns
+  for (var i = 0; i < n; i++) {
+    if (obj[i].indexOf(colIndex) === -1) {
+      obj[i].push(colIndex);
+    }
+  }
+  // cancel out rows
+  for (var i = 0; i < n; i++) {
+    if (obj[rowIndex].indexOf(i) === -1) {
+      obj[rowIndex].push(i);
+    }
+  }
+  // cancel out diags
+  var colLeft = colIndex;
+  var colRight = colIndex;
+  for (var i = rowIndex; i < n; i++) {
+    if (obj[i + 1] !== undefined) {
+      (colRight + 1 >= 0 && colRight + 1 < n && obj[i + 1].indexOf(colRight + 1) === -1) ? obj[i + 1].push(colRight + 1) : colRight;
+      (colLeft - 1 >= 0 && colLeft - 1 < n && obj[i + 1].indexOf(colLeft - 1) === -1) ? obj[i + 1].push(colLeft - 1) : colLeft;
+      colLeft--;
+      colRight++;
+    }
+  }
+  colLeft = colIndex;
+  colRight = colIndex;
+  for (var i = rowIndex; i > 0; i--) {
+    if (obj[i - 1] !== undefined) {
+      (colRight + 1 >= 0 && colRight + 1 < n && obj[i - 1].indexOf(colRight + 1) === -1) ? obj[i - 1].push(colRight + 1) : colRight;
+      (colLeft - 1 >= 0 && colLeft - 1 < n && obj[i - 1].indexOf(colLeft - 1) === -1) ? obj[i - 1].push(colLeft - 1) : colLeft;
+      colLeft--;
+      colRight++;
+    }
   }
 
-//  debugger;
-  //solution[0][1] = 1;
+  obj[rowIndex].splice(obj[rowIndex].indexOf(colIndex), 1);
 
-  var checkSol = function(arr) {
-    var count = 0;
+  return obj;
+};
+
+window.findNQueensSolution = function(n) {
+  var solution = createBoard(n);
+  var badIndexObj = {};
+  var solutionObj = {};
+ 
+  var populateObj = function(obj) {
     for (var i = 0; i < n; i++) {
-      for (var j = 0; j < n; j++) {
-        debugger;
-        solution[i][j] = 1;
-        count++;
-        if (hasRowConflictAt(i, solution) || hasColConflictAt(j, solution) || hasAnyMinorDiagonalConflicts(solution) || hasAnyMajorDiagonalConflicts(solution)) {
-          solution[i][j] = 0;
-          count--;
+      obj[i] = [];
+    }
+    return obj;
+  };
+  debugger;
+  badIndexObj = populateObj(badIndexObj);
+
+  var sum = 0;
+  for (var i = 0; i < n; i++) {
+    sum += i;
+  }
+  
+  if ( n === 0) {
+    return [];
+  }
+  if (n === 1) {
+    return [[1]];
+  }
+
+  var finished = false;
+
+  var helper = function(boardRowLength, currRow) {
+    if (!finished) {
+      for (var i = 0; i < boardRowLength; i++) {
+        if (badIndexObj[currRow] !== undefined) {
+          if (badIndexObj[currRow].indexOf(i) === -1 && currRow !== finalRow) {
+            var copy = JSON.parse(JSON.stringify(badIndexObj));
+            calcInvalidSpots(currRow, i, n, badIndexObj);
+            helper(boardRowLength, currRow + 1);
+            badIndexObj = JSON.parse(JSON.stringify(copy));
+          } else if (badIndexObj[currRow].indexOf(i) === -1 && currRow === finalRow) {
+            for (var key in badIndexObj) {
+              solutionObj[key] = sum - badIndexObj[key].reduce(function(a, b) { return a + b; });
+            }
+            for (var keys in solutionObj) {
+              solution[keys][solutionObj[keys]] = 1;
+            }
+            finished = true;
+            return solution;
+          } else if (badIndexObj[currRow].length === n && currRow !== finalRow) {
+            return;
+          } else if (badIndexObj[currRow].length === n && currRow === finalRow) {
+            return;
+          }
         }
       }
     }
-
-    return count;
   };
 
+  var currRow = 1;
+  var finalRow = n - 1;
   for (var i = 0; i < n; i++) {
-    solution[0][i] = 1;
-    if (checkSol(solution) === n) {
-      return solution;
-    } else {
-      solution = createBoard(n);
-    }
+    calcInvalidSpots(0, i, n, badIndexObj);
+    helper(n, currRow);
+    badIndexObj = populateObj(badIndexObj);
   }
-  console.log('Single solution for ' + n + ' queens:', JSON.stringify(solution));
-  return solution;
-};*/
-
-window.findNQueensSolution = function(n) {
-  var solution = [];
-
-
 
   console.log('Single solution for ' + n + ' queens:', JSON.stringify(solution));
   return solution;
@@ -279,14 +317,9 @@ var calculateInvalidSpots = function(rowIndex, colIndex, n, obj) {
 
 
 window.countNQueensSolutions = function(n) {
-  if (n === 4) {
-    debugger;
-  }
   var solutionCount = 0;
-  var solutionBoards = [];
   var badIndexObj = {};
-  
-  debugger;
+ 
   var populateObj = function(obj) {
     for (var i = 0; i < n; i++) {
       obj[i] = [];
@@ -294,17 +327,14 @@ window.countNQueensSolutions = function(n) {
     return obj;
   };
   badIndexObj = populateObj(badIndexObj);
-  debugger;
   
-
   if (n < 2) {
     return 1;
   }
 
-
   var helper = function(boardRowLength, currRow) {
     for (var i = 0; i < boardRowLength; i++) {
-      debugger;
+      //debugger;
       if (badIndexObj[currRow] !== undefined) {
         if (badIndexObj[currRow].indexOf(i) === -1 && currRow !== finalRow) {
           var copy = JSON.parse(JSON.stringify(badIndexObj));
@@ -322,8 +352,6 @@ window.countNQueensSolutions = function(n) {
     }
   };
 
-
-
   var currRow = 1;
   var finalRow = n - 1;
   for (var i = 0; i < n; i++) {
@@ -331,15 +359,6 @@ window.countNQueensSolutions = function(n) {
     helper(n, currRow);
     badIndexObj = populateObj(badIndexObj);
   }
-
-
-  // create board to store solution in
-  // set row 0, col i = 1
-  // go down each row and do the following until you hit the last row
-    // go through each column and check to see if it passes the conflict tests until you hit the last column
-      // if it passes the conflict tests, then set it equal to 1 and call helper function recursively with current array
-      // if not, keep going down columns
-
 
   console.log('Number of solutions for ' + n + ' queens:', solutionCount);
   return solutionCount;
