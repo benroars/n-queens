@@ -307,22 +307,17 @@ window.countNQueensSolutions = function(n) {
       debugger;
       if (badIndexObj[currRow] !== undefined) {
         if (badIndexObj[currRow].indexOf(i) === -1 && currRow !== finalRow) {
-          // commented out code below is for removing out the calclulateInvalidSpots for recursed positions that didn't work
-
-          //var tempObj = populateObj({});
-          //var temp = calculateInvalidSpots(currRow, i, n, tempObj);
+          var copy = JSON.parse(JSON.stringify(badIndexObj));
           calculateInvalidSpots(currRow, i, n, badIndexObj);
           helper(boardRowLength, currRow + 1);
-          //for (var key in temp) {
-          //  for (var i = 0; i < temp[key].length; i++) {
-          //    if (badIndexObj[key].indexOf(temp[key][i]) !== -1) {
-          //      badIndexObj[key].splice(badIndexObj[key].indexOf(temp[key][i]), 1);
-           //   }
-          //  }
-          //}
+          badIndexObj = JSON.parse(JSON.stringify(copy));
         } else if (badIndexObj[currRow].indexOf(i) === -1 && currRow === finalRow) {
           solutionCount++;
-        }//add break if badIndexObj[currRow] has all the indexes
+        } else if (badIndexObj[currRow].length === n && currRow !== finalRow) {
+          return;
+        } else if (badIndexObj[currRow].length === n && currRow === finalRow) {
+          return;
+        }
       }
     }
   };
@@ -330,10 +325,8 @@ window.countNQueensSolutions = function(n) {
 
 
   var currRow = 1;
-  var finalRow = n;
+  var finalRow = n - 1;
   for (var i = 0; i < n; i++) {
-   // var colArr = [];
-   // colArr.push(i);
     calculateInvalidSpots(0, i, n, badIndexObj);    
     helper(n, currRow);
     badIndexObj = populateObj(badIndexObj);
