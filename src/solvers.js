@@ -243,19 +243,23 @@ window.findNQueensSolution = function(n) {
 var calculateInvalidSpots = function(rowIndex, colIndex, n, obj) {
   // cancel out columns
   for (var i = 0; i < n; i++) {
-    obj[i].push(colIndex);
+    if (obj[i].indexOf(colIndex) === -1) {
+      obj[i].push(colIndex);
+    }
   }
   // cancel out rows
   for (var i = 0; i < n; i++) {
-    obj[rowIndex].push(i);
+    if (obj[rowIndex].indexOf(i) === -1) {
+      obj[rowIndex].push(i);
+    }
   }
   // cancel out diags
   var colLeft = colIndex;
   var colRight = colIndex;
   for (var i = rowIndex; i < n; i++) {
     if (obj[i + 1] !== undefined) {
-      (colRight + 1 >= 0 && colRight + 1 < n) ? obj[i + 1].push(colRight + 1) : colRight;
-      (colLeft - 1 >= 0 && colLeft - 1 < n) ? obj[i + 1].push(colLeft - 1) : colLeft;
+      (colRight + 1 >= 0 && colRight + 1 < n && obj[i + 1].indexOf(colRight + 1) === -1) ? obj[i + 1].push(colRight + 1) : colRight;
+      (colLeft - 1 >= 0 && colLeft - 1 < n && obj[i + 1].indexOf(colLeft - 1) === -1) ? obj[i + 1].push(colLeft - 1) : colLeft;
       colLeft--;
       colRight++;
     }
@@ -264,8 +268,8 @@ var calculateInvalidSpots = function(rowIndex, colIndex, n, obj) {
   colRight = colIndex;
   for (var i = rowIndex; i > 0; i--) {
     if (obj[i - 1] !== undefined) {
-      (colRight + 1 >= 0 && colRight + 1 < n) ? obj[i - 1].push(colRight + 1) : colRight;
-      (colLeft - 1 >= 0 && colLeft - 1 < n) ? obj[i - 1].push(colLeft - 1) : colLeft;
+      (colRight + 1 >= 0 && colRight + 1 < n && obj[i - 1].indexOf(colRight + 1) === -1) ? obj[i - 1].push(colRight + 1) : colRight;
+      (colLeft - 1 >= 0 && colLeft - 1 < n && obj[i - 1].indexOf(colLeft - 1) === -1) ? obj[i - 1].push(colLeft - 1) : colLeft;
       colLeft--;
       colRight++;
     }
@@ -275,16 +279,21 @@ var calculateInvalidSpots = function(rowIndex, colIndex, n, obj) {
 
 
 window.countNQueensSolutions = function(n) {
+  if (n === 4) {
+    debugger;
+  }
   var solutionCount = 0;
   var solutionBoards = [];
   var badIndexObj = {};
-  var populateObj = function() {
+  
+  debugger;
+  var populateObj = function(obj) {
     for (var i = 0; i < n; i++) {
-      badIndexObj[i] = [];
+      obj[i] = [];
     }
+    return obj;
   };
-  populateObj();
-  console.log(badIndexObj);
+  badIndexObj = populateObj(badIndexObj);
   debugger;
   
 
@@ -298,22 +307,27 @@ window.countNQueensSolutions = function(n) {
       debugger;
       if (badIndexObj[currRow] !== undefined) {
         if (badIndexObj[currRow].indexOf(i) === -1 && currRow !== finalRow) {
-          var temp = calculateInvalidSpots(currRow, i, n, {});
+          // commented out code below is for removing out the calclulateInvalidSpots for recursed positions that didn't work
+
+          //var tempObj = populateObj({});
+          //var temp = calculateInvalidSpots(currRow, i, n, tempObj);
           calculateInvalidSpots(currRow, i, n, badIndexObj);
           helper(boardRowLength, currRow + 1);
-          for (var key in temp) {
-            for (var i = 0; i < temp[key].length; i++) {
-              if (badIndexObj[key].indexOf(temp[key][i]) !== -1) {
-                badIndexObj[key].splice(badIndexObj[key].indexOf(temp[key][i]), 1);
-              }
-            }
-          }
+          //for (var key in temp) {
+          //  for (var i = 0; i < temp[key].length; i++) {
+          //    if (badIndexObj[key].indexOf(temp[key][i]) !== -1) {
+          //      badIndexObj[key].splice(badIndexObj[key].indexOf(temp[key][i]), 1);
+           //   }
+          //  }
+          //}
         } else if (badIndexObj[currRow].indexOf(i) === -1 && currRow === finalRow) {
           solutionCount++;
-        }
+        }//add break if badIndexObj[currRow] has all the indexes
       }
     }
   };
+
+
 
   var currRow = 1;
   var finalRow = n;
@@ -322,7 +336,7 @@ window.countNQueensSolutions = function(n) {
    // colArr.push(i);
     calculateInvalidSpots(0, i, n, badIndexObj);    
     helper(n, currRow);
-    populateObj();
+    badIndexObj = populateObj(badIndexObj);
   }
 
 
